@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 Smart Book Recommender - Register</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .auth-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 400px;
+        position: relative;
+      }
+
+      .auth-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 30px 30px;
+        text-align: center;
+      }
+
+      .auth-header h1 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .auth-header p {
+        opacity: 0.9;
+        font-size: 0.9em;
+      }
+
+      .auth-form {
+        padding: 40px 30px;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+        position: relative;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+        font-size: 0.9em;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        background: #fafafa;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+      }
+
+      .password-field {
+        position: relative;
+      }
+
+      .password-toggle-btn {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        font-size: 1.2em;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.3s ease;
+      }
+
+      .password-toggle-btn:hover {
+        opacity: 1;
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .auth-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .auth-footer p {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .auth-footer a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      .auth-footer a:hover {
+        color: #764ba2;
+        text-decoration: underline;
+      }
+
+      /* Loading Animation */
+      .loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+
+      .loading.show {
+        display: block;
+      }
+
+      .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Message Styles */
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #f56565;
+        font-size: 0.9em;
+      }
+
+      .success-message {
+        background: #efe;
+        color: #2d5a2d;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #48bb78;
+        font-size: 0.9em;
+      }
+
+      .field-requirements {
+        font-size: 0.8em;
+        color: #666;
+        margin-top: 5px;
+        line-height: 1.4;
+      }
+
+      .strength-meter {
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+
+      .strength-fill {
+        height: 100%;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+      }
+
+      .strength-weak {
+        background: #f56565;
+        width: 25%;
+      }
+      .strength-fair {
+        background: #ed8936;
+        width: 50%;
+      }
+      .strength-good {
+        background: #38a169;
+        width: 75%;
+      }
+      .strength-strong {
+        background: #2d5a2d;
+        width: 100%;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 480px) {
+        body {
+          padding: 10px;
+        }
+
+        .auth-container {
+          max-width: 100%;
+        }
+
+        .auth-header,
+        .auth-form {
+          padding: 30px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-header">
+        <h1>📚 Join Book Recommender</h1>
+        <p>Create your account to get personalized book recommendations</p>
+      </div>
+
+      <form class="auth-form" id="registerForm">
+        <div id="messageContainer"></div>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            minlength="3"
+            maxlength="50"
+          />
+          <div class="field-requirements">
+            3-50 characters, letters, numbers, and underscores only
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required />
+          <div class="field-requirements">
+            A valid email address for account verification
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              minlength="8"
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              onclick="togglePassword('password')"
+            >
+              👁️
+            </button>
+          </div>
+          <div class="strength-meter">
+            <div class="strength-fill" id="strengthFill"></div>
+          </div>
+          <div class="field-requirements">
+            At least 8 characters with uppercase, lowercase, number, and special
+            character
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <div class="password-field">
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              onclick="togglePassword('confirmPassword')"
+            >
+              👁️
+            </button>
+          </div>
+          <div class="field-requirements" id="passwordMatch"></div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="registerButton">
+          <span id="buttonText">Create Account</span>
+          <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+          </div>
+        </button>
+
+        <div class="auth-footer">
+          <p>Already have an account? <a href="/login">Sign in here</a></p>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Form submission handler
+      document
+        .getElementById('registerForm')
+        .addEventListener('submit', async function (e) {
+          e.preventDefault();
+
+          clearMessages();
+
+          const formData = new FormData(this);
+          const data = {
+            username: formData.get('username'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            confirmPassword: formData.get('confirmPassword'),
+          };
+
+          // Client-side validation
+          if (!validateForm(data)) {
+            return;
+          }
+
+          setLoading(true);
+
+          try {
+            const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                username: data.username,
+                email: data.email,
+                password: data.password,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              showMessage(
+                'Account created successfully! Redirecting to login...',
+                'success'
+              );
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 2000);
+            } else {
+              showMessage(
+                result.error || 'Registration failed. Please try again.',
+                'error'
+              );
+            }
+          } catch (error) {
+            showMessage(
+              'Network error. Please check your connection and try again.',
+              'error'
+            );
+          } finally {
+            setLoading(false);
+          }
+        });
+
+      // Form validation
+      function validateForm(data) {
+        // Username validation
+        if (data.username.length < 3 || data.username.length > 50) {
+          showMessage('Username must be between 3 and 50 characters.', 'error');
+          return false;
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(data.username)) {
+          showMessage(
+            'Username can only contain letters, numbers, and underscores.',
+            'error'
+          );
+          return false;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(data.email)) {
+          showMessage('Please enter a valid email address.', 'error');
+          return false;
+        }
+
+        // Password validation
+        if (data.password.length < 8) {
+          showMessage('Password must be at least 8 characters long.', 'error');
+          return false;
+        }
+
+        const passwordStrength = checkPasswordStrength(data.password);
+        if (passwordStrength < 3) {
+          showMessage(
+            'Password is too weak. Please include uppercase, lowercase, numbers, and special characters.',
+            'error'
+          );
+          return false;
+        }
+
+        // Confirm password validation
+        if (data.password !== data.confirmPassword) {
+          showMessage('Passwords do not match.', 'error');
+          return false;
+        }
+
+        return true;
+      }
+
+      // Password strength checker
+      function checkPasswordStrength(password) {
+        let score = 0;
+
+        // Length check
+        if (password.length >= 8) score++;
+
+        // Character type checks
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+        return score;
+      }
+
+      // Update password strength meter
+      function updatePasswordStrength() {
+        const password = document.getElementById('password').value;
+        const strengthFill = document.getElementById('strengthFill');
+
+        if (!password) {
+          strengthFill.className = 'strength-fill';
+          return;
+        }
+
+        const strength = checkPasswordStrength(password);
+
+        strengthFill.className = 'strength-fill';
+        if (strength >= 2) strengthFill.classList.add('strength-weak');
+        if (strength >= 3) strengthFill.classList.add('strength-fair');
+        if (strength >= 4) strengthFill.classList.add('strength-good');
+        if (strength >= 5) strengthFill.classList.add('strength-strong');
+      }
+
+      // Check password match
+      function checkPasswordMatch() {
+        const password = document.getElementById('password').value;
+        const confirmPassword =
+          document.getElementById('confirmPassword').value;
+        const matchDiv = document.getElementById('passwordMatch');
+
+        if (!confirmPassword) {
+          matchDiv.textContent = '';
+          return;
+        }
+
+        if (password === confirmPassword) {
+          matchDiv.textContent = '✓ Passwords match';
+          matchDiv.style.color = '#38a169';
+        } else {
+          matchDiv.textContent = '✗ Passwords do not match';
+          matchDiv.style.color = '#f56565';
+        }
+      }
+
+      // Password toggle function
+      function togglePassword(fieldId) {
+        const passwordInput = document.getElementById(fieldId);
+        const toggleBtn = passwordInput.nextElementSibling;
+
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          toggleBtn.textContent = '🙈';
+        } else {
+          passwordInput.type = 'password';
+          toggleBtn.textContent = '👁️';
+        }
+      }
+
+      // Show message
+      function showMessage(message, type) {
+        const container = document.getElementById('messageContainer');
+        const messageClass =
+          type === 'error' ? 'error-message' : 'success-message';
+
+        container.innerHTML = `
+                <div class="${messageClass}">
+                    ${message}
+                </div>
+            `;
+      }
+
+      // Clear messages
+      function clearMessages() {
+        document.getElementById('messageContainer').innerHTML = '';
+      }
+
+      // Set loading state
+      function setLoading(isLoading) {
+        const loading = document.getElementById('loading');
+        const button = document.getElementById('registerButton');
+        const buttonText = document.getElementById('buttonText');
+
+        if (isLoading) {
+          loading.classList.add('show');
+          buttonText.style.opacity = '0';
+          button.disabled = true;
+        } else {
+          loading.classList.remove('show');
+          buttonText.style.opacity = '1';
+          button.disabled = false;
+        }
+      }
+
+      // Event listeners for real-time validation
+      document
+        .getElementById('password')
+        .addEventListener('input', updatePasswordStrength);
+      document
+        .getElementById('confirmPassword')
+        .addEventListener('input', checkPasswordMatch);
+      document
+        .getElementById('password')
+        .addEventListener('input', checkPasswordMatch);
+
+      // Handle Enter key
+      document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          document
+            .getElementById('registerForm')
+            .dispatchEvent(new Event('submit'));
+        }
+      });
+
+      // Check if already logged in
+      window.addEventListener('load', function () {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // Verify token is still valid
+          fetch('/api/auth/profile', {
+            headers: {
+              Authorization: 'Bearer ' + token,
+            },
+          })
+            .then((response) => {
+              if (response.ok) {
+                window.location.href = '/';
+              }
+            })
+            .catch(() => {
+              // Token invalid, remove it
+              localStorage.removeItem('auth_token');
+            });
+        }
+      });
+    </script>
+  </body>
+</html>

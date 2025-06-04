@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 Smart Book Recommender Chat</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background: #f8f9fa;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+      }
+
+      /* Sidebar Styles */
+      .sidebar {
+        width: 300px;
+        background: #ffffff;
+        border-right: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+      }
+
+      .sidebar-header h1 {
+        font-size: 1.2em;
+        margin-bottom: 5px;
+      }
+
+      .sidebar-header p {
+        font-size: 0.8em;
+        opacity: 0.9;
+      }
+
+      .new-chat-btn {
+        margin: 15px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+
+      .new-chat-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      }
+
+      .chat-sessions {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 15px;
+      }
+
+      .session-item {
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        border: 1px solid transparent;
+      }
+
+      .session-item:hover {
+        background: #f8f9fa;
+        border-color: #e9ecef;
+      }
+
+      .session-item.active {
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1) 0%,
+          rgba(118, 75, 162, 0.1) 100%
+        );
+        border-color: #667eea;
+      }
+
+      .session-title {
+        font-size: 14px;
+        color: #495057;
+        margin-bottom: 4px;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .session-meta {
+        font-size: 12px;
+        color: #6c757d;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .session-actions {
+        display: none;
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        gap: 4px;
+      }
+
+      .session-item:hover .session-actions {
+        display: flex;
+      }
+
+      .action-btn {
+        background: rgba(108, 117, 125, 0.1);
+        border: none;
+        border-radius: 4px;
+        padding: 4px 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
+      }
+
+      .action-btn:hover {
+        background: rgba(108, 117, 125, 0.2);
+      }
+
+      /* Main Chat Area */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      .chat-header {
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .chat-title {
+        font-size: 1.1em;
+        color: #495057;
+        font-weight: 600;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .header-btn {
+        background: none;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
+
+      .header-btn:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        color: #667eea;
+      }
+
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background: #ffffff;
+      }
+
+      .message {
+        margin-bottom: 20px;
+        display: flex;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        justify-content: flex-end;
+      }
+
+      .message.bot {
+        justify-content: flex-start;
+      }
+
+      .message-content {
+        max-width: 70%;
+        padding: 15px 20px;
+        border-radius: 20px;
+        position: relative;
+      }
+
+      .message.user .message-content {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom-right-radius: 5px;
+      }
+
+      .message.bot .message-content {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        color: #495057;
+      }
+
+      /* Message Content Formatting */
+      .message-content ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+
+      .message-content li {
+        margin: 8px 0;
+        line-height: 1.5;
+      }
+
+      .message-content strong {
+        color: #495057;
+        font-weight: 600;
+      }
+
+      .message-content em {
+        font-style: italic;
+        color: #6c757d;
+      }
+
+      .message-content p {
+        margin: 10px 0;
+        line-height: 1.6;
+      }
+
+      /* Better spacing for formatted text */
+      .message-content br + br {
+        line-height: 0.5;
+      }
+
+      /* Book Card Styles */
+      .books-grid {
+        display: grid;
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .book-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        gap: 15px;
+      }
+
+      .book-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .book-thumbnail {
+        flex-shrink: 0;
+        width: 80px;
+        height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .book-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .book-title {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+      }
+
+      .book-author {
+        color: #6c757d;
+        font-style: italic;
+        margin-bottom: 8px;
+      }
+
+      .book-description {
+        font-size: 0.9em;
+        color: #495057;
+        line-height: 1.4;
+        margin-bottom: 8px;
+      }
+
+      .book-description.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .book-excerpt {
+        font-size: 0.85em;
+        color: #6c757d;
+        line-height: 1.4;
+        margin-bottom: 8px;
+        font-style: italic;
+        border-left: 3px solid #dee2e6;
+        padding-left: 10px;
+      }
+
+      .book-excerpt.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .book-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .book-similarity {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.8em;
+      }
+
+      .expand-btn {
+        background: none;
+        border: none;
+        color: #667eea;
+        cursor: pointer;
+        font-size: 0.8em;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .expand-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+      }
+
+      .book-isbn {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-bottom: 5px;
+      }
+
+      .chat-input-container {
+        padding: 20px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .chat-input-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .chat-input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        font-size: 16px;
+        outline: none;
+        transition: border-color 0.3s;
+        resize: none;
+        min-height: 50px;
+        max-height: 120px;
+      }
+
+      .chat-input:focus {
+        border-color: #667eea;
+      }
+
+      .send-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 25px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: transform 0.2s;
+        height: 50px;
+      }
+
+      .send-btn:hover:not(:disabled) {
+        transform: scale(1.05);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      .typing-indicator {
+        display: none;
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 20px;
+        border-bottom-left-radius: 5px;
+        max-width: 70%;
+        margin-bottom: 20px;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 4px;
+      }
+
+      .typing-dots span {
+        width: 8px;
+        height: 8px;
+        background: #667eea;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .welcome-message {
+        text-align: center;
+        color: #6c757d;
+        margin: 50px 0;
+        line-height: 1.6;
+      }
+
+      .welcome-message h3 {
+        color: #495057;
+        margin-bottom: 15px;
+      }
+
+      .examples {
+        display: grid;
+        gap: 10px;
+        margin-top: 20px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .example {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+      }
+
+      .example:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+        transform: translateY(-1px);
+      }
+
+      /* Mobile Responsiveness */
+      .sidebar-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 18px;
+        padding: 8px;
+        cursor: pointer;
+        color: #6c757d;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          height: 100vh;
+          z-index: 1000;
+          transform: translateX(-100%);
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .sidebar-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+        }
+
+        .sidebar-overlay.show {
+          display: block;
+        }
+
+        .sidebar-toggle {
+          display: block;
+        }
+
+        .message-content {
+          max-width: 85%;
+        }
+
+        .chat-header {
+          padding: 10px 15px;
+        }
+
+        .chat-messages {
+          padding: 15px;
+        }
+      }
+
+      /* Scrollbar Styles */
+      .chat-messages::-webkit-scrollbar,
+      .chat-sessions::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .chat-messages::-webkit-scrollbar-track,
+      .chat-sessions::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      .chat-messages::-webkit-scrollbar-thumb,
+      .chat-sessions::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+
+      .chat-messages::-webkit-scrollbar-thumb:hover,
+      .chat-sessions::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 300px;
+        max-width: 90%;
+      }
+
+      .modal-header {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #495057;
+      }
+
+      .modal-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 15px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .modal-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .modal-btn.primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .modal-btn.secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .modal-btn:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar Overlay for Mobile -->
+    <div
+      class="sidebar-overlay"
+      id="sidebarOverlay"
+      onclick="toggleSidebar()"
+    ></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>📚 Smart Book Recommender</h1>
+        <p>Powered by BERT & AI</p>
+      </div>
+
+      <button class="new-chat-btn" onclick="createNewChat()">
+        ➕ New Chat
+      </button>
+
+      <div class="chat-sessions" id="chatSessions">
+        <!-- Chat sessions will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="chat-header">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+          <div class="chat-title" id="chatTitle">📚 Smart Book Recommender</div>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" onclick="renameCurrentChat()">
+            ✏️ Rename
+          </button>
+          <button class="header-btn" onclick="clearCurrentChat()">
+            🗑️ Clear
+          </button>
+          <button class="header-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-message" id="welcomeMessage">
+          <h3>👋 Xin chào! Tôi có thể giúp bạn tìm sách</h3>
+          <p>Hãy cho tôi biết bạn đang tìm sách gì. Tôi có thể:</p>
+          <p>📖 Tìm sách cụ thể theo tên</p>
+          <p>🎯 Gợi ý sách theo chủ đề hoặc thể loại</p>
+          <p>✨ Phân tích ý định và đưa ra gợi ý phù hợp</p>
+
+          <div class="examples">
+            <div class="example" onclick="sendExample('Harry Potter')">
+              💫 "Harry Potter" - Tìm sách Harry Potter
+            </div>
+            <div
+              class="example"
+              onclick="sendExample('sách giống Harry Potter')"
+            >
+              🪄 "sách giống Harry Potter" - Tìm sách fantasy tương tự
+            </div>
+            <div class="example" onclick="sendExample('tiểu thuyết lãng mạn')">
+              💕 "tiểu thuyết lãng mạn" - Khám phá sách romance
+            </div>
+            <div
+              class="example"
+              onclick="sendExample('5 cuốn sách về khoa học viễn tưởng')"
+            >
+              🚀 "5 cuốn sách về khoa học viễn tưởng" - Tìm sci-fi
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="chat-input-container">
+        <form class="chat-input-form" onsubmit="sendMessage(event)">
+          <textarea
+            class="chat-input"
+            id="messageInput"
+            placeholder="Nhập câu hỏi của bạn..."
+            rows="1"
+            required
+          ></textarea>
+          <button type="submit" class="send-btn" id="sendBtn">📤</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal" id="renameModal">
+      <div class="modal-content">
+        <div class="modal-header">Đổi tên cuộc trò chuyện</div>
+        <input
+          type="text"
+          class="modal-input"
+          id="renameInput"
+          placeholder="Nhập tên mới..."
+        />
+        <div class="modal-actions">
+          <button class="modal-btn secondary" onclick="closeRenameModal()">
+            Hủy
+          </button>
+          <button class="modal-btn primary" onclick="confirmRename()">
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentSessionId = null;
+      let isTyping = false;
+      let messageCounter = 0;
+
+      // Initialize app
+      window.onload = function () {
+        loadChatSessions();
+        setupTextareaAutoResize();
+      };
+
+      // Auto-resize textarea
+      function setupTextareaAutoResize() {
+        const textarea = document.getElementById('messageInput');
+        textarea.addEventListener('input', function () {
+          this.style.height = 'auto';
+          this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+      }
+
+      // Load all chat sessions
+      async function loadChatSessions() {
+        try {
+          const response = await fetch('/api/chat/sessions');
+          const data = await response.json();
+
+          const sessionsContainer = document.getElementById('chatSessions');
+          sessionsContainer.innerHTML = '';
+
+          if (data.sessions.length === 0) {
+            // Create first session if none exist
+            await createNewChat();
+            return;
+          }
+
+          data.sessions.forEach((session) => {
+            const sessionElement = createSessionElement(session);
+            sessionsContainer.appendChild(sessionElement);
+          });
+
+          // Load the most recent session
+          if (data.sessions.length > 0 && !currentSessionId) {
+            loadChatSession(data.sessions[0].session_id);
+          }
+        } catch (error) {
+          console.error('Error loading chat sessions:', error);
+        }
+      }
+
+      // Create session element
+      function createSessionElement(session) {
+        const div = document.createElement('div');
+        div.className = 'session-item';
+        div.onclick = () => loadChatSession(session.session_id);
+
+        const timeAgo = getTimeAgo(session.updated_at);
+
+        div.innerHTML = `
+          <div class="session-title">${escapeHtml(session.title)}</div>
+          <div class="session-meta">
+            <span>${timeAgo}</span>
+            <span>${session.message_count} tin nhắn</span>
+          </div>
+          <div class="session-actions">
+            <button class="action-btn" onclick="event.stopPropagation(); renameSession('${
+              session.session_id
+            }')" title="Đổi tên">✏️</button>
+            <button class="action-btn" onclick="event.stopPropagation(); deleteSession('${
+              session.session_id
+            }')" title="Xóa">🗑️</button>
+          </div>
+        `;
+
+        div.dataset.sessionId = session.session_id;
+        return div;
+      }
+
+      // Get time ago string
+      function getTimeAgo(timestamp) {
+        const now = new Date();
+        const time = new Date(timestamp);
+        const diffMs = now - time;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) return `${diffDays} ngày trước`;
+        if (diffHours > 0) return `${diffHours} giờ trước`;
+        return 'Vừa xong';
+      }
+
+      // Load specific chat session
+      async function loadChatSession(sessionId) {
+        try {
+          // Update active session
+          document.querySelectorAll('.session-item').forEach((item) => {
+            item.classList.remove('active');
+          });
+          document
+            .querySelector(`[data-session-id="${sessionId}"]`)
+            ?.classList.add('active');
+
+          currentSessionId = sessionId;
+          messageCounter = 0;
+
+          const response = await fetch(`/api/chat/history/${sessionId}`);
+          const data = await response.json();
+
+          const messagesContainer = document.getElementById('chatMessages');
+          messagesContainer.innerHTML = '';
+
+          // Update chat title
+          const chatTitle = document.getElementById('chatTitle');
+          chatTitle.textContent = data.metadata?.title || 'New Chat';
+
+          if (data.history && data.history.length > 0) {
+            data.history.forEach((item) => {
+              if (item.type === 'user') {
+                addUserMessage(item.message, false);
+              } else if (item.type === 'bot') {
+                addBotMessage(item.message, item.books || [], false);
+              }
+            });
+          } else {
+            showWelcomeMessage();
+          }
+
+          // Close sidebar on mobile
+          if (window.innerWidth <= 768) {
+            toggleSidebar();
+          }
+        } catch (error) {
+          console.error('Error loading chat session:', error);
+        }
+      }
+
+      // Create new chat
+      async function createNewChat() {
+        try {
+          const response = await fetch('/api/chat/new', { method: 'POST' });
+          const data = await response.json();
+
+          await loadChatSessions(); // Reload sessions
+          loadChatSession(data.session_id); // Load new session
+        } catch (error) {
+          console.error('Error creating new chat:', error);
+        }
+      }
+
+      // Send message
+      async function sendMessage(event) {
+        event.preventDefault();
+
+        if (isTyping || !currentSessionId) return;
+
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        // Hide welcome message
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        if (welcomeMessage) {
+          welcomeMessage.remove();
+        }
+
+        // Add user message to chat
+        addUserMessage(message);
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Show typing indicator
+        showTyping();
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: message,
+              session_id: currentSessionId,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            addBotMessage('Xin lỗi, có lỗi xảy ra: ' + data.error, []);
+          } else {
+            addBotMessage(data.ai_response, data.books || []);
+          }
+
+          // Reload sessions to update titles and timestamps
+          loadChatSessions();
+        } catch (error) {
+          console.error('Error:', error);
+          addBotMessage('Xin lỗi, có lỗi kết nối. Vui lòng thử lại sau.', []);
+        } finally {
+          hideTyping();
+        }
+      }
+
+      // Send example message
+      function sendExample(text) {
+        const input = document.getElementById('messageInput');
+        input.value = text;
+        sendMessage(new Event('submit'));
+      }
+
+      // Add user message
+      function addUserMessage(message, scroll = true) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message user';
+        messageDiv.innerHTML = `
+          <div class="message-content">
+            ${escapeHtml(message)}
+          </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        if (scroll) scrollToBottom();
+      }
+
+      // Add bot message
+      function addBotMessage(message, books, scroll = true) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message bot';
+
+        const messageId = messageCounter++;
+
+        // Convert markdown-style formatting to HTML
+        let formattedMessage = escapeHtml(message)
+          .replace(/\n/g, '<br>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+          .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
+          .replace(/^\* (.+)/gm, '<li>$1</li>') // List items
+          .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Wrap consecutive list items in ul
+
+        // Fix multiple consecutive lists
+        formattedMessage = formattedMessage
+          .replace(/<\/ul><br><ul>/g, '') // Remove breaks between lists
+          .replace(/(<li>.*?<\/li>)(<br>)*(<li>)/g, '$1$3'); // Remove breaks between list items
+
+        let booksHtml = '';
+        if (books && books.length > 0) {
+          booksHtml = `
+            <div class="books-grid">
+              ${books
+                .map((book, index) => {
+                  const bookId = `${messageId}_${index}`;
+                  return `
+                  <div class="book-card">
+                    ${
+                      book.thumbnail
+                        ? `<img src="${escapeHtml(
+                            book.thumbnail
+                          )}" alt="Book cover" class="book-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                         <div class="book-thumbnail" style="display:none;">📚 No Image</div>`
+                        : `<div class="book-thumbnail">📚 No Image</div>`
+                    }
+                    <div class="book-content">
+                      <div class="book-title">📚 ${escapeHtml(book.title)}</div>
+                      <div class="book-author">✍️ ${escapeHtml(
+                        book.authors
+                      )}</div>
+                      ${
+                        book.isbn
+                          ? `<div class="book-isbn">ISBN: ${escapeHtml(
+                              book.isbn
+                            )}</div>`
+                          : ''
+                      }
+                      
+                      <div class="book-description collapsed" id="description-${bookId}">
+                        <strong>Mô tả:</strong> ${escapeHtml(book.description)}
+                      </div>
+                      
+                      <div class="book-excerpt collapsed" id="excerpt-${bookId}">
+                        <strong>Trích đoạn:</strong> ${escapeHtml(book.excerpt)}
+                      </div>
+                      
+                      <div class="book-footer">
+                        <span class="book-similarity">Độ tương đồng: ${
+                          book.similarity
+                        }</span>
+                        <button class="expand-btn" onclick="toggleExpand('${bookId}')" id="expand-btn-${bookId}">
+                          <span id="expand-text-${bookId}">Xem thêm ▼</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                })
+                .join('')}
+            </div>
+          `;
+        }
+
+        messageDiv.innerHTML = `
+          <div class="message-content">
+            ${formattedMessage}
+            ${booksHtml}
+          </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        if (scroll) scrollToBottom();
+      }
+
+      // Toggle book expansion
+      function toggleExpand(bookId) {
+        try {
+          const description = document.getElementById(`description-${bookId}`);
+          const excerpt = document.getElementById(`excerpt-${bookId}`);
+          const expandText = document.getElementById(`expand-text-${bookId}`);
+
+          if (!description || !excerpt || !expandText) {
+            console.error('Could not find elements for bookId:', bookId);
+            return;
+          }
+
+          const isCollapsed = description.classList.contains('collapsed');
+
+          if (isCollapsed) {
+            description.classList.remove('collapsed');
+            excerpt.classList.remove('collapsed');
+            expandText.innerHTML = 'Thu gọn ▲';
+          } else {
+            description.classList.add('collapsed');
+            excerpt.classList.add('collapsed');
+            expandText.innerHTML = 'Xem thêm ▼';
+          }
+        } catch (error) {
+          console.error('Error in toggleExpand:', error, 'bookId:', bookId);
+        }
+      }
+
+      // Show welcome message
+      function showWelcomeMessage() {
+        const messagesContainer = document.getElementById('chatMessages');
+        messagesContainer.innerHTML = `
+          <div class="welcome-message" id="welcomeMessage">
+            <h3>👋 Xin chào! Tôi có thể giúp bạn tìm sách</h3>
+            <p>Hãy cho tôi biết bạn đang tìm sách gì. Tôi có thể:</p>
+            <p>📖 Tìm sách cụ thể theo tên</p>
+            <p>🎯 Gợi ý sách theo chủ đề hoặc thể loại</p>
+            <p>✨ Phân tích ý định và đưa ra gợi ý phù hợp</p>
+
+            <div class="examples">
+              <div class="example" onclick="sendExample('Harry Potter')">
+                💫 "Harry Potter" - Tìm sách Harry Potter
+              </div>
+              <div class="example" onclick="sendExample('sách giống Harry Potter')">
+                🪄 "sách giống Harry Potter" - Tìm sách fantasy tương tự
+              </div>
+              <div class="example" onclick="sendExample('tiểu thuyết lãng mạn')">
+                💕 "tiểu thuyết lãng mạn" - Khám phá sách romance
+              </div>
+              <div class="example" onclick="sendExample('5 cuốn sách về khoa học viễn tưởng')">
+                🚀 "5 cuốn sách về khoa học viễn tưởng" - Tìm sci-fi
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Typing indicator
+      function showTyping() {
+        isTyping = true;
+        document.getElementById('typingIndicator').style.display = 'block';
+        document.getElementById('sendBtn').disabled = true;
+        scrollToBottom();
+      }
+
+      function hideTyping() {
+        isTyping = false;
+        document.getElementById('typingIndicator').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+      }
+
+      // Scroll to bottom
+      function scrollToBottom() {
+        const messagesContainer = document.getElementById('chatMessages');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      // Escape HTML
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Clear current chat - only removes messages, keeps the session
+      async function clearCurrentChat() {
+        if (
+          !currentSessionId ||
+          !confirm(
+            'Bạn có chắc muốn xóa lịch sử tin nhắn của cuộc trò chuyện này?'
+          )
+        )
+          return;
+
+        console.log(
+          `🧹 Attempting to clear messages for session: ${currentSessionId}`
+        );
+
+        try {
+          const response = await fetch(`/api/chat/clear/${currentSessionId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          const result = await response.json();
+          console.log('Clear response:', result);
+
+          if (response.ok && result.success) {
+            showWelcomeMessage();
+            messageCounter = 0;
+            loadChatSessions(); // Reload to update session list
+            console.log('✅ Successfully cleared chat messages');
+          } else {
+            console.error(
+              'Failed to clear chat:',
+              result.error || 'Unknown error'
+            );
+            alert(
+              'Có lỗi khi xóa tin nhắn: ' +
+                (result.error || 'Lỗi không xác định')
+            );
+          }
+        } catch (error) {
+          console.error('Error clearing chat:', error);
+          alert('Có lỗi khi xóa tin nhắn');
+        }
+      }
+
+      // Rename current chat
+      function renameCurrentChat() {
+        if (!currentSessionId) return;
+
+        const currentTitle = document.getElementById('chatTitle').textContent;
+        document.getElementById('renameInput').value = currentTitle;
+        document.getElementById('renameModal').style.display = 'block';
+      }
+
+      // Rename session
+      function renameSession(sessionId) {
+        currentSessionId = sessionId;
+        const sessionElement = document.querySelector(
+          `[data-session-id="${sessionId}"]`
+        );
+        const currentTitle =
+          sessionElement.querySelector('.session-title').textContent;
+        document.getElementById('renameInput').value = currentTitle;
+        document.getElementById('renameModal').style.display = 'block';
+      }
+
+      // Close rename modal
+      function closeRenameModal() {
+        document.getElementById('renameModal').style.display = 'none';
+      }
+
+      // Confirm rename
+      async function confirmRename() {
+        if (!currentSessionId) return;
+
+        const newTitle = document.getElementById('renameInput').value.trim();
+        if (!newTitle) return;
+
+        try {
+          const response = await fetch(`/api/chat/rename/${currentSessionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle }),
+          });
+
+          if (response.ok) {
+            document.getElementById('chatTitle').textContent = newTitle;
+            loadChatSessions(); // Reload to update session list
+            closeRenameModal();
+          } else {
+            alert('Có lỗi khi đổi tên chat');
+          }
+        } catch (error) {
+          console.error('Error renaming chat:', error);
+          alert('Có lỗi khi đổi tên chat');
+        }
+      }
+
+      // Delete session
+      async function deleteSession(sessionId) {
+        if (!confirm('Bạn có chắc muốn xóa cuộc trò chuyện này?')) return;
+
+        console.log(`🗑️ Attempting to delete session: ${sessionId}`);
+
+        try {
+          const response = await fetch(`/api/chat/delete/${sessionId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          const result = await response.json();
+          console.log('Delete response:', result);
+
+          if (response.ok && result.success) {
+            console.log('✅ Successfully deleted session');
+
+            if (sessionId === currentSessionId) {
+              // If deleting current session, create a new one
+              await createNewChat();
+            } else {
+              loadChatSessions(); // Just reload sessions
+            }
+          } else {
+            console.error(
+              'Failed to delete session:',
+              result.error || 'Unknown error'
+            );
+            alert(
+              'Có lỗi khi xóa cuộc trò chuyện: ' +
+                (result.error || 'Lỗi không xác định')
+            );
+          }
+        } catch (error) {
+          console.error('Error deleting session:', error);
+          alert('Có lỗi khi xóa cuộc trò chuyện');
+        }
+      }
+
+      // Logout function
+      async function logout() {
+        if (!confirm('Bạn có chắc muốn đăng xuất?')) return;
+
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (response.ok) {
+            // Clear any local storage or session data if needed
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // Redirect to login page
+            window.location.href = '/login';
+          } else {
+            alert('Có lỗi khi đăng xuất');
+          }
+        } catch (error) {
+          console.error('Error during logout:', error);
+          alert('Có lỗi khi đăng xuất');
+        }
+      }
+
+      // Toggle sidebar for mobile
+      function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('show');
+      }
+
+      // Handle Enter key
+      document
+        .getElementById('messageInput')
+        .addEventListener('keypress', function (e) {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(e);
+          }
+        });
+
+      // Handle rename modal Enter key
+      document
+        .getElementById('renameInput')
+        .addEventListener('keypress', function (e) {
+          if (e.key === 'Enter') {
+            confirmRename();
+          }
+        });
+
+      // Close modal when clicking outside
+      document
+        .getElementById('renameModal')
+        .addEventListener('click', function (e) {
+          if (e.target === this) {
+            closeRenameModal();
+          }
+        });
+    </script>
+  </body>
+</html>

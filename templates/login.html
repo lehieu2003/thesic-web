@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 Smart Book Recommender - Login</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .auth-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 400px;
+        position: relative;
+      }
+
+      .auth-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 30px 30px;
+        text-align: center;
+      }
+
+      .auth-header h1 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .auth-header p {
+        opacity: 0.9;
+        font-size: 0.9em;
+      }
+
+      .auth-form {
+        padding: 40px 30px;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #495057;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .form-input:valid {
+        border-color: #28a745;
+      }
+
+      .auth-button {
+        width: 100%;
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+      }
+
+      .auth-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      .auth-button:active {
+        transform: translateY(0);
+      }
+
+      .auth-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .auth-link {
+        text-align: center;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .auth-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .auth-link a:hover {
+        text-decoration: underline;
+      }
+
+      .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        border: 1px solid #f5c6cb;
+      }
+
+      .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        border: 1px solid #c3e6cb;
+      }
+
+      .loading {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #667eea;
+      }
+
+      .loading.show {
+        display: flex;
+      }
+
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e9ecef;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .password-toggle {
+        position: relative;
+      }
+
+      .password-toggle-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #6c757d;
+        font-size: 18px;
+      }
+
+      .role-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+
+      .role-admin {
+        background: #dc3545;
+        color: white;
+      }
+
+      .role-user {
+        background: #28a745;
+        color: white;
+      }
+
+      /* Mobile Responsiveness */
+      @media (max-width: 480px) {
+        .auth-container {
+          margin: 10px;
+          border-radius: 16px;
+        }
+
+        .auth-header {
+          padding: 30px 20px 20px;
+        }
+
+        .auth-header h1 {
+          font-size: 1.5em;
+        }
+
+        .auth-form {
+          padding: 30px 20px;
+        }
+      }
+
+      /* Animation for form appearance */
+      .auth-container {
+        animation: slideUp 0.6s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        Đang đăng nhập...
+      </div>
+
+      <div class="auth-header">
+        <h1>📚 Smart Book Recommender</h1>
+        <p>Đăng nhập để truy cập hệ thống gợi ý sách thông minh</p>
+      </div>
+
+      <form class="auth-form" id="loginForm">
+        <div id="messageContainer"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="username"
+            >Tên đăng nhập hoặc Email</label
+          >
+          <input
+            type="text"
+            class="form-input"
+            id="username"
+            name="username"
+            placeholder="Nhập tên đăng nhập hoặc email"
+            required
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Mật khẩu</label>
+          <div class="password-toggle">
+            <input
+              type="password"
+              class="form-input"
+              id="password"
+              name="password"
+              placeholder="Nhập mật khẩu"
+              required
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              onclick="togglePassword()"
+            >
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-button" id="loginButton">
+          🔐 Đăng nhập
+        </button>
+
+        <div class="auth-link">
+          Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Form submission
+      document
+        .getElementById('loginForm')
+        .addEventListener('submit', async function (e) {
+          e.preventDefault();
+
+          const username = document.getElementById('username').value.trim();
+          const password = document.getElementById('password').value;
+
+          if (!username || !password) {
+            showMessage('Vui lòng nhập đầy đủ thông tin', 'error');
+            return;
+          }
+
+          setLoading(true);
+          clearMessages();
+
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                username: username,
+                password: password,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              const userRole = result.user?.role || 'user';
+              const roleBadge =
+                userRole === 'admin'
+                  ? '<span class="role-badge role-admin">ADMIN</span>'
+                  : '<span class="role-badge role-user">USER</span>';
+
+              showMessage(
+                `Đăng nhập thành công! ${roleBadge} Đang chuyển hướng...`,
+                'success'
+              );
+
+              // Store token if provided
+              if (result.token) {
+                localStorage.setItem('auth_token', result.token);
+              }
+
+              // Redirect based on user role
+              setTimeout(() => {
+                if (userRole === 'admin') {
+                  window.location.href = '/admin';
+                } else {
+                  window.location.href = '/';
+                }
+              }, 1500);
+            } else {
+              showMessage(result.message || 'Đăng nhập thất bại', 'error');
+            }
+          } catch (error) {
+            console.error('Login error:', error);
+            showMessage('Có lỗi xảy ra. Vui lòng thử lại sau.', 'error');
+          } finally {
+            setLoading(false);
+          }
+        });
+
+      // Password toggle
+      function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = document.querySelector('.password-toggle-btn');
+
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          toggleBtn.textContent = '🙈';
+        } else {
+          passwordInput.type = 'password';
+          toggleBtn.textContent = '👁️';
+        }
+      }
+
+      // Show message
+      function showMessage(message, type) {
+        const container = document.getElementById('messageContainer');
+        const messageClass =
+          type === 'error' ? 'error-message' : 'success-message';
+
+        container.innerHTML = `
+                <div class="${messageClass}">
+                    ${message}
+                </div>
+            `;
+      }
+
+      // Clear messages
+      function clearMessages() {
+        document.getElementById('messageContainer').innerHTML = '';
+      }
+
+      // Set loading state
+      function setLoading(isLoading) {
+        const loading = document.getElementById('loading');
+        const button = document.getElementById('loginButton');
+
+        if (isLoading) {
+          loading.classList.add('show');
+          button.disabled = true;
+        } else {
+          loading.classList.remove('show');
+          button.disabled = false;
+        }
+      }
+
+      // Handle Enter key
+      document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          document
+            .getElementById('loginForm')
+            .dispatchEvent(new Event('submit'));
+        }
+      });
+
+      // Check if already logged in
+      window.addEventListener('load', function () {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          // Verify token is still valid
+          fetch('/api/auth/profile', {
+            headers: {
+              Authorization: 'Bearer ' + token,
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                // Redirect based on user role
+                if (data.user.role === 'admin') {
+                  window.location.href = '/admin';
+                } else {
+                  window.location.href = '/';
+                }
+              }
+            })
+            .catch(() => {
+              // Token invalid, remove it
+              localStorage.removeItem('auth_token');
+            });
+        }
+      });
+    </script>
+  </body>
+</html>

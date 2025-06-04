@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 Chi tiết sách - Smart Book Recommender</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary-color: #667eea;
+        --secondary-color: #764ba2;
+        --accent-color: #f093fb;
+        --text-dark: #2c3e50;
+        --text-light: #6c757d;
+        --background: #f8f9fa;
+        --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        --border-radius: 12px;
+        --transition: all 0.3s ease;
+        --success-color: #28a745;
+        --info-color: #17a2b8;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          sans-serif;
+        line-height: 1.6;
+        color: var(--text-dark);
+        background: var(--background);
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        color: white;
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: var(--card-shadow);
+      }
+
+      .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .nav-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: var(--transition);
+        font-size: 0.9rem;
+      }
+
+      .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+      }
+
+      /* Main Content */
+      .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      /* Breadcrumb */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        color: var(--text-light);
+      }
+
+      .breadcrumb a {
+        color: var(--primary-color);
+        text-decoration: none;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      /* Loading State */
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Book Detail Layout */
+      .book-detail {
+        display: none;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        margin-bottom: 2rem;
+      }
+
+      .book-hero {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+        padding: 2rem;
+      }
+
+      .book-cover {
+        position: relative;
+      }
+
+      .book-cover img {
+        width: 100%;
+        height: auto;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        max-height: 400px;
+        object-fit: cover;
+      }
+
+      .book-cover .fallback {
+        width: 100%;
+        height: 400px;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 3rem;
+        font-weight: bold;
+      }
+
+      .book-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .book-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+      }
+
+      .book-subtitle {
+        font-size: 1.5rem;
+        color: var(--text-light);
+        margin-bottom: 1rem;
+        font-weight: 300;
+      }
+
+      .book-authors {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        font-weight: 500;
+      }
+
+      .book-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .meta-item {
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+        border: 2px solid #e3e8ff;
+        border-radius: 16px;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .meta-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--primary-color),
+          var(--accent-color)
+        );
+      }
+
+      .meta-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        border-color: var(--primary-color);
+      }
+
+      .meta-label {
+        font-weight: 700;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .meta-value {
+        color: var(--text-dark);
+        font-size: 1.1rem;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+
+      .rating-stars {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+      }
+
+      .star {
+        color: #ffc107;
+        font-size: 1.2rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .star.empty {
+        color: #e0e0e0;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-primary {
+        background: var(--primary-color);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+      }
+
+      .btn-outline {
+        background: transparent;
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      .btn-outline:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      /* Book Details Sections */
+      .book-sections {
+        padding: 0 2rem 2rem;
+      }
+
+      .section {
+        margin-bottom: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
+      }
+
+      .description {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: var(--text-dark);
+        text-align: justify;
+      }
+
+      .description-container {
+        position: relative;
+      }
+
+      .description.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .show-more-btn {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 0.5rem;
+        padding: 0;
+        font-size: 1rem;
+        transition: var(--transition);
+      }
+
+      .show-more-btn:hover {
+        text-decoration: underline;
+        color: var(--secondary-color);
+      }
+
+      .categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .category-tag {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .simple-category-tag {
+        background: var(--accent-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      /* Emotion Analysis */
+      .emotions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+
+      .emotion-item {
+        background: white;
+        border: 2px solid var(--background);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: var(--transition);
+      }
+
+      .emotion-item:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+      }
+
+      .emotion-name {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: capitalize;
+      }
+
+      .emotion-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+      }
+
+      .emotion-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--background);
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+      }
+
+      .emotion-fill {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--primary-color),
+          var(--accent-color)
+        );
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+
+      /* Error State */
+      .error {
+        display: none;
+        text-align: center;
+        padding: 3rem;
+        color: var(--danger-color);
+      }
+
+      .error-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      .error-message {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .header-container {
+          padding: 0 1rem;
+        }
+
+        .main-container {
+          padding: 1rem;
+        }
+
+        .book-hero {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+
+        .book-cover {
+          max-width: 300px;
+          margin: 0 auto;
+        }
+
+        .book-title {
+          font-size: 2rem;
+        }
+
+        .book-meta {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .meta-item {
+          padding: 1.25rem;
+        }
+
+        .action-buttons {
+          justify-content: center;
+        }
+
+        .emotions-grid {
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+      }
+
+      @media (max-width: 480px) {
+        .book-title {
+          font-size: 1.5rem;
+        }
+
+        .book-subtitle {
+          font-size: 1.2rem;
+        }
+
+        .nav-links {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .breadcrumb {
+          flex-wrap: wrap;
+        }
+
+        .book-meta {
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+        }
+
+        .meta-item {
+          padding: 1rem;
+        }
+
+        .meta-label {
+          font-size: 0.8rem;
+        }
+
+        .meta-value {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-container">
+        <a href="/" class="logo">📚 Smart Book Recommender</a>
+        <nav class="nav-links">
+          <a href="/" class="nav-btn">🏠 Trang chủ</a>
+          <a href="/chat" class="nav-btn">💬 Chat AI</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span>›</span>
+        <span>Chi tiết sách</span>
+      </nav>
+
+      <!-- Loading State -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Đang tải thông tin sách...</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="error" id="error">
+        <div class="error-icon">📚❌</div>
+        <div class="error-message">Không thể tải thông tin sách</div>
+        <p>Sách không tồn tại hoặc đã xảy ra lỗi.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 1rem"
+          >Quay về trang chủ</a
+        >
+      </div>
+
+      <!-- Book Detail -->
+      <div class="book-detail" id="bookDetail">
+        <div class="book-hero">
+          <div class="book-cover">
+            <img
+              id="bookCover"
+              src=""
+              alt="Book Cover"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="fallback" style="display: none">📚</div>
+          </div>
+          <div class="book-info">
+            <h1 class="book-title" id="bookTitle"></h1>
+            <h2 class="book-subtitle" id="bookSubtitle"></h2>
+            <div class="book-authors" id="bookAuthors"></div>
+
+            <div class="book-meta" id="bookMeta">
+              <!-- Meta information will be populated here -->
+            </div>
+
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="startChat()">
+                💬 Hỏi về cuốn sách này
+              </button>
+              <button class="btn btn-outline" onclick="addToFavorites()">
+                ❤️ Yêu thích
+              </button>
+              <button class="btn btn-outline" onclick="shareBook()">
+                📤 Chia sẻ
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="book-sections">
+          <!-- Description Section -->
+          <div class="section">
+            <h3 class="section-title">📖 Mô tả sách</h3>
+            <div class="description-container">
+              <div class="description" id="bookDescription"></div>
+              <button
+                class="show-more-btn"
+                id="showMoreBtn"
+                onclick="toggleDescription()"
+                style="display: none"
+              >
+                Hiển thị thêm
+              </button>
+            </div>
+          </div>
+
+          <!-- Categories Section -->
+          <div class="section">
+            <h3 class="section-title">🏷️ Thể loại</h3>
+            <div class="categories" id="bookCategories"></div>
+          </div>
+
+          <!-- Emotion Analysis Section -->
+          <div class="section" id="emotionSection">
+            <h3 class="section-title">🎭 Phân tích cảm xúc</h3>
+            <div class="emotions-grid" id="emotionsGrid"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const isbn13 = '{{ isbn13 }}';
+      let bookData = null;
+
+      // Load book data when page loads
+      document.addEventListener('DOMContentLoaded', function () {
+        loadBookDetail();
+      });
+
+      async function loadBookDetail() {
+        try {
+          const response = await fetch(`/api/books/${isbn13}`);
+          const data = await response.json();
+
+          if (data.success) {
+            bookData = data.book;
+            displayBookDetail(bookData);
+          } else {
+            showError();
+          }
+        } catch (error) {
+          console.error('Error loading book detail:', error);
+          showError();
+        }
+      }
+
+      function displayBookDetail(book) {
+        // Hide loading, show book detail
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('bookDetail').style.display = 'block';
+
+        // Update page title
+        document.title = `📚 ${book.title} - Smart Book Recommender`;
+
+        // Update book cover
+        const bookCover = document.getElementById('bookCover');
+        if (book.thumbnail) {
+          bookCover.src = book.thumbnail;
+          bookCover.style.display = 'block';
+          bookCover.nextElementSibling.style.display = 'none';
+        } else {
+          bookCover.style.display = 'none';
+          bookCover.nextElementSibling.style.display = 'flex';
+        }
+
+        // Update book information
+        document.getElementById('bookTitle').textContent = book.title;
+
+        const subtitle = document.getElementById('bookSubtitle');
+        if (book.title_and_subtitle && book.title_and_subtitle !== book.title) {
+          subtitle.textContent = book.title_and_subtitle;
+          subtitle.style.display = 'block';
+        } else {
+          subtitle.style.display = 'none';
+        }
+
+        document.getElementById('bookAuthors').textContent =
+          book.authors || 'Tác giả không xác định';
+
+        // Update meta information
+        updateBookMeta(book);
+
+        // Update description
+        const description = document.getElementById('bookDescription');
+        const descriptionText =
+          book.description || book.tagged_description || 'Không có mô tả.';
+        const showMoreBtn = document.getElementById('showMoreBtn');
+
+        // Check if description is longer than 500 characters
+        if (descriptionText.length > 500) {
+          description.dataset.fullText = descriptionText;
+          description.dataset.shortText =
+            descriptionText.substring(0, 500) + '...';
+          description.textContent = description.dataset.shortText;
+          description.classList.add('collapsed');
+          showMoreBtn.style.display = 'block';
+        } else {
+          description.textContent = descriptionText;
+          showMoreBtn.style.display = 'none';
+        }
+
+        // Update categories
+        updateCategories(book);
+
+        // Update emotion analysis
+        updateEmotions(book);
+      }
+
+      function updateBookMeta(book) {
+        const metaContainer = document.getElementById('bookMeta');
+        metaContainer.innerHTML = '';
+
+        // Rating
+        if (book.average_rating) {
+          const ratingDiv = createMetaItem(
+            '⭐ Đánh giá',
+            formatRating(book.average_rating, book.ratings_count)
+          );
+          metaContainer.appendChild(ratingDiv);
+        }
+
+        // ISBN
+        if (book.isbn13) {
+          const isbnDiv = createMetaItem('📔 ISBN', book.isbn13);
+          metaContainer.appendChild(isbnDiv);
+        }
+
+        // Published Year
+        if (book.published_year) {
+          const yearDiv = createMetaItem(
+            '📅 Năm xuất bản',
+            book.published_year
+          );
+          metaContainer.appendChild(yearDiv);
+        }
+
+        // Pages
+        if (book.num_pages) {
+          const pagesDiv = createMetaItem('📄 Số trang', book.num_pages);
+          metaContainer.appendChild(pagesDiv);
+        }
+      }
+
+      function createMetaItem(label, value) {
+        const div = document.createElement('div');
+        div.className = 'meta-item';
+        div.innerHTML = `
+          <div class="meta-label">${label}</div>
+          <div class="meta-value">${value}</div>
+        `;
+        return div;
+      }
+
+      function formatRating(rating, count) {
+        const stars = generateStars(rating);
+        const countText = count ? ` (${count} đánh giá)` : '';
+        return `<div class="rating-stars">${stars} ${rating.toFixed(
+          1
+        )}${countText}</div>`;
+      }
+
+      function generateStars(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+          if (i <= rating) {
+            stars += '<span class="star">★</span>';
+          } else {
+            stars += '<span class="star empty">★</span>';
+          }
+        }
+        return stars;
+      }
+
+      function updateCategories(book) {
+        const categoriesContainer = document.getElementById('bookCategories');
+        categoriesContainer.innerHTML = '';
+
+        // Main categories
+        if (book.categories) {
+          const categories = book.categories
+            .split(',')
+            .map((cat) => cat.trim())
+            .filter((cat) => cat);
+          categories.forEach((category) => {
+            const tag = document.createElement('span');
+            tag.className = 'category-tag';
+            tag.textContent = category;
+            categoriesContainer.appendChild(tag);
+          });
+        }
+
+        // Simple categories
+        if (book.simple_categories) {
+          const simpleCategories = book.simple_categories
+            .split(',')
+            .map((cat) => cat.trim())
+            .filter((cat) => cat);
+          simpleCategories.forEach((category) => {
+            const tag = document.createElement('span');
+            tag.className = 'simple-category-tag';
+            tag.textContent = category;
+            categoriesContainer.appendChild(tag);
+          });
+        }
+
+        if (categoriesContainer.children.length === 0) {
+          categoriesContainer.innerHTML =
+            '<span class="category-tag">Chưa phân loại</span>';
+        }
+      }
+
+      function updateEmotions(book) {
+        const emotionsContainer = document.getElementById('emotionsGrid');
+        emotionsContainer.innerHTML = '';
+
+        if (!book.emotions) {
+          document.getElementById('emotionSection').style.display = 'none';
+          return;
+        }
+
+        const emotions = [
+          { name: 'joy', label: 'Vui vẻ', icon: '😊' },
+          { name: 'sadness', label: 'Buồn bã', icon: '😢' },
+          { name: 'anger', label: 'Tức giận', icon: '😠' },
+          { name: 'fear', label: 'Sợ hãi', icon: '😨' },
+          { name: 'surprise', label: 'Ngạc nhiên', icon: '😲' },
+          { name: 'disgust', label: 'Ghê tởm', icon: '🤢' },
+          { name: 'neutral', label: 'Trung tính', icon: '😐' },
+        ];
+
+        emotions.forEach((emotion) => {
+          const value = book.emotions[emotion.name];
+          if (value !== null && value !== undefined) {
+            const emotionDiv = document.createElement('div');
+            emotionDiv.className = 'emotion-item';
+
+            const percentage = Math.round(value * 100);
+            emotionDiv.innerHTML = `
+              <div class="emotion-name">${emotion.icon} ${emotion.label}</div>
+              <div class="emotion-value">${percentage}%</div>
+              <div class="emotion-bar">
+                <div class="emotion-fill" style="width: ${percentage}%"></div>
+              </div>
+            `;
+
+            emotionsContainer.appendChild(emotionDiv);
+          }
+        });
+      }
+
+      function showError() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+      }
+
+      // Action functions
+      function startChat() {
+        if (bookData) {
+          const query = `Chi tiết về cuốn sách "${bookData.title}" của ${bookData.authors}`;
+          window.location.href = `/chat?q=${encodeURIComponent(query)}`;
+        }
+      }
+
+      function addToFavorites() {
+        // TODO: Implement favorites functionality
+        alert('Tính năng yêu thích sẽ được triển khai soonkkkk!');
+      }
+
+      function shareBook() {
+        if (navigator.share && bookData) {
+          navigator.share({
+            title: bookData.title,
+            text: `Khám phá cuốn sách "${bookData.title}" của ${bookData.authors}`,
+            url: window.location.href,
+          });
+        } else {
+          // Fallback: copy to clipboard
+          navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Đã sao chép liên kết sách vào clipboard!');
+          });
+        }
+      }
+
+      function toggleDescription() {
+        const description = document.getElementById('bookDescription');
+        const showMoreBtn = document.getElementById('showMoreBtn');
+        const isCollapsed = description.classList.contains('collapsed');
+
+        if (isCollapsed) {
+          // Show full text
+          description.textContent = description.dataset.fullText;
+          description.classList.remove('collapsed');
+          showMoreBtn.textContent = 'Thu gọn';
+        } else {
+          // Show short text
+          description.textContent = description.dataset.shortText;
+          description.classList.add('collapsed');
+          showMoreBtn.textContent = 'Hiển thị thêm';
+        }
+      }
+    </script>
+  </body>
+</html>
