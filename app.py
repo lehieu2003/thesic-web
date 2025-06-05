@@ -1,5 +1,12 @@
 import os
 import sys
+import os
+import sys
+import psycopg
+import litellm
+import json
+import re
+import uuid
 from dotenv import load_dotenv
 import psycopg
 import litellm
@@ -24,6 +31,38 @@ from create_user import (
     create_user_tables, register_user, login_user, get_user_by_id,
     update_user_profile, change_password, verify_jwt_token,
     get_all_users, update_user_role
+)
+
+# Import bookshelf functions
+from create_bookshelf import (
+    create_bookshelf_table, add_book_to_bookshelf, remove_book_from_bookshelf,
+    update_bookshelf_item, get_user_bookshelf, get_bookshelf_stats
+)
+
+# Import favorites functions
+from create_favorite import (
+    create_favorites_table, add_book_to_favorites, remove_book_from_favorites,
+    update_favorite_item, get_user_favorites, get_popular_favorite_tags,
+    get_favorites_stats, is_book_favorited
+)
+
+# Import bookshelf functions
+from create_bookshelf import (
+    create_bookshelf_table, add_book_to_bookshelf, remove_book_from_bookshelf,
+    update_bookshelf_item, get_user_bookshelf, get_bookshelf_stats
+)
+
+# Import favorites functions
+from create_favorite import (
+    create_favorites_table, add_book_to_favorites, remove_book_from_favorites,
+    update_favorite_item, get_user_favorites, get_popular_favorite_tags,
+    get_favorites_stats, is_book_favorited
+)
+
+# Import API functions
+from api import (
+    api_explore_trending, api_get_categories, 
+    api_get_category_books, api_get_bestsellers
 )
 
 
@@ -54,7 +93,9 @@ print("✅ BERT model loaded successfully")
 print("🔧 Initializing user and chat history tables...")
 create_user_tables()
 create_chat_history_tables()
-print("✅ User and chat history system ready!")
+create_bookshelf_table()
+create_favorites_table()
+print("✅ User, chat history, bookshelf and favorites system ready!")
 
 # Authentication middleware
 def get_current_user():
@@ -424,6 +465,30 @@ def chat_page():
     """Serve the chat page for authenticated users."""
     return render_template('chat.html')
 
+@app.route('/profile')
+@require_auth
+def profile_page():
+    """Serve the user profile page."""
+    return render_template('profile.html')
+
+@app.route('/my-books')
+@require_auth
+def my_books_page():
+    """Serve the my books page."""
+    return render_template('my_books.html')
+
+@app.route('/favorites')
+@require_auth
+def favorites_page():
+    """Serve the favorites page."""
+    return render_template('favorites.html')
+
+@app.route('/bookshelf')
+@require_auth
+def bookshelf_page():
+    """Serve the bookshelf page."""
+    return render_template('bookshelf.html')
+
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     """Register a new user."""
@@ -483,6 +548,28 @@ def api_profile():
     user = get_current_user()
     result = get_user_by_id(user['user_id'])
     return jsonify(result)
+
+@app.route('/api/user/profile', methods=['PUT'])
+@require_auth
+def api_update_profile():
+    """Update current user profile."""
+    user = get_current_user()
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'success': False, 'error': 'No data provided'}), 400
+    
+    # Extract allowed fields
+    full_name = data.get('full_name')
+    email = data.get('email')
+    
+    # Call the database function to update profile
+    result = update_user_profile(user['user_id'], full_name=full_name, email=email)
+    
+    if result.get('success'):
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
 
 # Admin routes
 @app.route('/admin')
@@ -1457,6 +1544,330 @@ def api_get_public_book_detail(isbn13):
     finally:
         if conn:
             conn.close()
+
+# ==================== BOOKSHELF API ENDPOINTS ====================
+
+@app.route('/api/bookshelf', methods=['GET'])
+@require_auth
+def api_get_user_bookshelf():
+    """Get user's bookshelf."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        status = request.args.get('status')  # Optional filter by status
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        result = get_user_bookshelf(user_id, status=status, limit=limit, offset=offset)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting user bookshelf: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bookshelf', methods=['POST'])
+@require_auth
+def api_add_to_bookshelf():
+    """Add a book to user's bookshelf."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        data = request.get_json()
+        isbn13 = data.get('isbn13')
+        status = data.get('status', 'want_to_read')
+        progress = data.get('progress', 0)
+        notes = data.get('notes', '')
+        personal_rating = data.get('personal_rating')
+        
+        if not isbn13:
+            return jsonify({'success': False, 'error': 'ISBN13 is required'}), 400
+        
+        if status not in ['want_to_read', 'currently_reading', 'read']:
+            return jsonify({'success': False, 'error': 'Invalid status'}), 400
+        
+        result = add_book_to_bookshelf(
+            user_id=user_id,
+            isbn13=isbn13,
+            status=status,
+            notes=notes,
+            personal_rating=personal_rating
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error adding to bookshelf: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bookshelf/<isbn13>', methods=['GET'])
+@require_auth
+def api_check_bookshelf_item(isbn13):
+    """Check if a book is in user's bookshelf."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        conn = get_db_conn()
+        if not conn:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, status, progress, notes, personal_rating, 
+                           date_started, date_finished, added_at, updated_at
+                    FROM bookshelf 
+                    WHERE user_id = %s AND isbn13 = %s
+                """, (user_id, isbn13))
+                
+                result = cur.fetchone()
+                if result:
+                    return jsonify({
+                        'success': True,
+                        'in_bookshelf': True,
+                        'bookshelf_item': {
+                            'id': str(result[0]),
+                            'status': result[1],
+                            'progress': result[2],
+                            'notes': result[3],
+                            'personal_rating': result[4],
+                            'date_started': result[5].isoformat() if result[5] else None,
+                            'date_finished': result[6].isoformat() if result[6] else None,
+                            'added_at': result[7].isoformat() if result[7] else None,
+                            'updated_at': result[8].isoformat() if result[8] else None
+                        }
+                    })
+                else:
+                    return jsonify({
+                        'success': True,
+                        'in_bookshelf': False,
+                        'bookshelf_item': None
+                    })
+                    
+        finally:
+            if conn:
+                conn.close()
+                
+    except Exception as e:
+        print(f"❌ Error checking bookshelf item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bookshelf/<isbn13>', methods=['PUT'])
+@require_auth
+def api_update_bookshelf_item(isbn13):
+    """Update a bookshelf item."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        data = request.get_json()
+        
+        result = update_bookshelf_item(
+            user_id=user_id,
+            isbn13=isbn13,
+            status=data.get('status'),
+            progress=data.get('progress'),
+            notes=data.get('notes'),
+            personal_rating=data.get('personal_rating'),
+            date_started=data.get('date_started'),
+            date_finished=data.get('date_finished')
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error updating bookshelf item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bookshelf/<isbn13>', methods=['DELETE'])
+@require_auth
+def api_remove_from_bookshelf(isbn13):
+    """Remove a book from user's bookshelf."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        result = remove_book_from_bookshelf(user_id, isbn13)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error removing from bookshelf: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/bookshelf/stats', methods=['GET'])
+@require_auth
+def api_get_bookshelf_stats():
+    """Get user's bookshelf statistics."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        result = get_bookshelf_stats(user_id)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting bookshelf stats: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== FAVORITES API ENDPOINTS ====================
+
+@app.route('/api/favorites', methods=['GET'])
+@require_auth
+def api_get_user_favorites():
+    """Get user's favorite books."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        tags = request.args.get('tags')  # Comma-separated tags for filtering
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        tag_list = tags.split(',') if tags else None
+        
+        result = get_user_favorites(user_id, tags=tag_list, limit=limit, offset=offset)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting user favorites: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites', methods=['POST'])
+@require_auth
+def api_add_to_favorites():
+    """Add a book to user's favorites."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        data = request.get_json()
+        isbn13 = data.get('isbn13')
+        notes = data.get('notes', '')
+        favorite_reason = data.get('favorite_reason', '')
+        tags = data.get('tags', [])
+        
+        if not isbn13:
+            return jsonify({'success': False, 'error': 'ISBN13 is required'}), 400
+        
+        result = add_book_to_favorites(
+            user_id=user_id,
+            isbn13=isbn13,
+            notes=notes,
+            favorite_reason=favorite_reason,
+            tags=tags
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error adding to favorites: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites/<isbn13>', methods=['PUT'])
+@require_auth
+def api_update_favorite_item(isbn13):
+    """Update a favorite item."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        data = request.get_json()
+        
+        result = update_favorite_item(
+            user_id=user_id,
+            isbn13=isbn13,
+            notes=data.get('notes'),
+            favorite_reason=data.get('favorite_reason'),
+            tags=data.get('tags')
+        )
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error updating favorite item: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites/<isbn13>', methods=['DELETE'])
+@require_auth
+def api_remove_from_favorites(isbn13):
+    """Remove a book from user's favorites."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        result = remove_book_from_favorites(user_id, isbn13)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error removing from favorites: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites/check/<isbn13>', methods=['GET'])
+@require_auth
+def api_check_favorite_status(isbn13):
+    """Check if a book is in user's favorites."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        result = is_book_favorited(user_id, isbn13)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error checking favorite status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites/stats', methods=['GET'])
+@require_auth
+def api_get_favorites_stats():
+    """Get user's favorites statistics."""
+    try:
+        user = get_current_user()
+        user_id = user['user_id']
+        
+        result = get_favorites_stats(user_id)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting favorites stats: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/favorites/tags/popular', methods=['GET'])
+def api_get_popular_tags():
+    """Get popular favorite tags."""
+    try:
+        limit = request.args.get('limit', 20, type=int)
+        
+        result = get_popular_favorite_tags(limit=limit)
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting popular tags: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== LIBRARY PAGE ROUTES ====================
+
+@app.route('/library')
+@require_auth
+def library_page():
+    """Serve the user library page."""
+    return render_template('library.html')
+
+@app.route('/explore')
+@require_auth
+def explore_page():
+    """Serve the explore page."""
+    return render_template('explore.html')
+
+@app.route('/category/<category_slug>')
+@require_auth
+def category_books_page(category_slug):
+    """Serve the category books page."""
+    return render_template('category_books.html', category_slug=category_slug)
+
+@app.route('/bestsellers')
+@require_auth
+def bestsellers_page():
+    """Serve the bestsellers page."""
+    return render_template('bestsellers.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

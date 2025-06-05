@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bestsellers - Book Recommendations</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+
+      .navbar {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 0;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 2rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .nav-link {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link:hover,
+      .nav-link.active {
+        color: #ffd700;
+        transform: translateY(-2px);
+      }
+
+      .user-menu {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .user-name {
+        color: white;
+        font-weight: 500;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+      }
+
+      .page-subtitle {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.8);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .time-filter-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .time-filters {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .time-filter {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50px;
+        background: transparent;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .time-filter.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .time-filter:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .controls-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .search-box {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        outline: none;
+      }
+
+      .filters {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-select {
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 0.9rem;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .stats-bar {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+      }
+
+      .bestsellers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .bestseller-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .bestseller-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ffd700, #ffed4e);
+      }
+
+      .bestseller-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .rank-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #333;
+        font-weight: 700;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 20px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .book-cover {
+        width: 140px;
+        height: 180px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .book-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+      }
+
+      .book-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #333;
+        line-height: 1.3;
+        height: 2.6em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .book-author {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      .book-stats {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 12px;
+      }
+
+      .stat-item {
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #667eea;
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .book-rating {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .stars {
+        display: flex;
+        gap: 2px;
+      }
+
+      .star {
+        color: #ffd700;
+        font-size: 1rem;
+      }
+
+      .rating-text {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+      }
+
+      .book-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 0.75rem 1.25rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        border: 1px solid #667eea;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 3rem;
+      }
+
+      .pagination button {
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .pagination button:hover:not(:disabled) {
+        background: white;
+        transform: translateY(-2px);
+      }
+
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 3rem;
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        .page-title {
+          font-size: 2rem;
+        }
+
+        .time-filters {
+          justify-content: stretch;
+        }
+
+        .time-filter {
+          flex: 1;
+          text-align: center;
+        }
+
+        .controls-section {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .filters {
+          justify-content: stretch;
+        }
+
+        .filter-select {
+          flex: 1;
+        }
+
+        .bestsellers-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .stats-bar {
+          flex-direction: column;
+          gap: 0.5rem;
+          text-align: center;
+        }
+
+        .nav-menu {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="/" class="logo">📚 BookRec</a>
+        <div class="nav-menu">
+          <a href="/explore" class="nav-link">Khám phá</a>
+          <a href="/categories" class="nav-link">Thể loại</a>
+          <a href="/bestsellers" class="nav-link active">Bestseller</a>
+        </div>
+        <div class="user-menu">
+          {% if session.user_id %}
+          <span class="user-name">{{ session.username }}</span>
+          <a href="/profile" class="nav-link">Profile</a>
+          <a href="/logout" class="nav-link">Đăng xuất</a>
+          {% else %}
+          <a href="/login" class="nav-link">Đăng nhập</a>
+          <a href="/register" class="nav-link">Đăng ký</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">🏆 Bestsellers</h1>
+        <p class="page-subtitle">
+          Khám phá những cuốn sách được yêu thích nhất, được đánh giá cao và phổ
+          biến trong cộng đồng độc giả
+        </p>
+      </div>
+
+      <div class="time-filter-section">
+        <div class="time-filters">
+          <button class="time-filter active" data-period="all">
+            Tất cả thời gian
+          </button>
+          <button class="time-filter" data-period="year">Năm nay</button>
+          <button class="time-filter" data-period="month">Tháng này</button>
+          <button class="time-filter" data-period="week">Tuần này</button>
+        </div>
+      </div>
+
+      <div class="controls-section">
+        <div class="search-box">
+          <input
+            type="text"
+            id="bookSearch"
+            class="search-input"
+            placeholder="Tìm kiếm trong bestsellers..."
+          />
+        </div>
+        <div class="filters">
+          <select id="sortSelect" class="filter-select">
+            <option value="popularity">Phổ biến nhất</option>
+            <option value="rating">Đánh giá cao</option>
+            <option value="views">Lượt xem</option>
+            <option value="recent">Mới cập nhật</option>
+          </select>
+          <select id="categoryFilter" class="filter-select">
+            <option value="">Tất cả thể loại</option>
+            <option value="van-hoc">Văn học</option>
+            <option value="kinh-te">Kinh tế</option>
+            <option value="tam-ly">Tâm lý</option>
+            <option value="khoa-hoc-vien-tuong">Khoa học - Viễn tưởng</option>
+            <option value="lich-su">Lịch sử</option>
+            <option value="trinh-tham">Trinh thám</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="stats-bar" id="statsBar" style="display: none">
+        <div id="statsText">Đang tải...</div>
+        <div id="periodInfo"></div>
+      </div>
+
+      <div id="bestsellersContainer">
+        <div class="loading">
+          <div>🔄 Đang tải bestsellers...</div>
+        </div>
+      </div>
+
+      <div class="pagination" id="paginationContainer" style="display: none">
+        <button id="prevButton">‹ Trước</button>
+        <span id="pageInfo"></span>
+        <button id="nextButton">Sau ›</button>
+      </div>
+    </div>
+
+    <script>
+      let currentPage = 1;
+      let totalPages = 1;
+      let currentPeriod = 'all';
+      let isLoading = false;
+
+      function generateStars(rating) {
+          const fullStars = Math.floor(rating);
+          const hasHalfStar = rating % 1 !== 0;
+          let stars = '';
+
+          for (let i = 0; i < fullStars; i++) {
+              stars += '<span class="star">★</span>';
+          }
+
+          if (hasHalfStar) {
+              stars += '<span class="star">☆</span>';
+          }
+
+          for (let i = fullStars + (hasHalfStar ? 1 : 0); i < 5; i++) {
+              stars += '<span class="star" style="color: #ddd;">☆</span>';
+          }
+
+          return stars;
+      }
+
+      function formatNumber(num) {
+          if (num >= 1000000) {
+              return (num / 1000000).toFixed(1) + 'M';
+          } else if (num >= 1000) {
+              return (num / 1000).toFixed(1) + 'K';
+          }
+          return num.toString();
+      }
+
+      function renderBestsellers(books, totalBooks, currentPage, totalPages) {
+          const container = document.getElementById('bestsellersContainer');
+          const statsBar = document.getElementById('statsBar');
+          const statsText = document.getElementById('statsText');
+          const periodInfo = document.getElementById('periodInfo');
+          const paginationContainer = document.getElementById('paginationContainer');
+
+          if (books.length === 0) {
+              container.innerHTML = `
+                  <div class="empty-state">
+                      <div class="empty-icon">📚</div>
+                      <h3>Không tìm thấy bestseller nào</h3>
+                      <p>Thử thay đổi bộ lọc hoặc khoảng thời gian</p>
+                  </div>
+              `;
+              statsBar.style.display = 'none';
+              paginationContainer.style.display = 'none';
+              return;
+          }
+
+          const bestsellersHTML = books.map((book, index) => {
+              const rank = (currentPage - 1) * 12 + index + 1;
+              return `
+                  <div class="bestseller-card" onclick="viewBookDetails('${book.id}')">
+                      <div class="rank-badge">#${rank}</div>
+                      <div class="book-cover">
+                          ${book.image_url ? `<img src="${book.image_url}" alt="${book.title}" onerror="this.style.display='none'">` : '📖'}
+                      </div>
+                      <div class="book-title">${book.title}</div>
+                      <div class="book-author">${book.author || 'Tác giả không rõ'}</div>
+
+                      <div class="book-stats">
+                          <div class="stat-item">
+                              <span class="stat-value">${formatNumber(book.views || 0)}</span>
+                              <span class="stat-label">Lượt xem</span>
+                          </div>
+                          <div class="stat-item">
+                              <span class="stat-value">${formatNumber(book.likes || 0)}</span>
+                              <span class="stat-label">Lượt thích</span>
+                          </div>
+                          <div class="stat-item">
+                              <span class="stat-value">${book.reviews_count || 0}</span>
+                              <span class="stat-label">Đánh giá</span>
+                          </div>
+                      </div>
+
+                      <div class="book-rating">
+                          <div class="stars">${generateStars(book.average_rating || 0)}</div>
+                          <span class="rating-text">${book.average_rating ? book.average_rating.toFixed(1) : 'N/A'}</span>
+                      </div>
+
+                      <div class="book-actions">
+                          <button class="btn btn-primary" onclick="event.stopPropagation(); getRecommendations('${book.id}')">
+                              Gợi ý tương tự
+                          </button>
+                          ${window.userLoggedIn ? `<button class="btn btn-secondary" onclick="event.stopPropagation(); toggleFavorite('${book.id}')">♡</button>` : ''}
+                      </div>
+                  </div>
+              `;
+          }).join('');
+
+          container.innerHTML = `<div class="bestsellers-grid">${bestsellersHTML}</div>`;
+
+          // Update stats
+          const startItem = (currentPage - 1) * 12 + 1;
+          const endItem = Math.min(currentPage * 12, totalBooks);
+          statsText.textContent = `Hiển thị ${startItem}-${endItem} trong tổng số ${totalBooks} bestsellers`;
+
+          const periodLabels = {
+              'all': 'Tất cả thời gian',
+              'year': 'Năm nay',
+              'month': 'Tháng này',
+              'week': 'Tuần này'
+          };
+          periodInfo.textContent = `Khoảng thời gian: ${periodLabels[currentPeriod]}`;
+          statsBar.style.display = 'flex';
+
+          // Update pagination
+          updatePagination(currentPage, totalPages);
+          paginationContainer.style.display = totalPages > 1 ? 'flex' : 'none';
+      }
+
+      function updatePagination(current, total) {
+          const prevButton = document.getElementById('prevButton');
+          const nextButton = document.getElementById('nextButton');
+          const pageInfo = document.querySelector('#paginationContainer #pageInfo');
+
+          prevButton.disabled = current <= 1;
+          nextButton.disabled = current >= total;
+          pageInfo.textContent = `${current} / ${total}`;
+
+          prevButton.onclick = () => {
+              if (current > 1) {
+                  currentPage = current - 1;
+                  loadBestsellers();
+              }
+          };
+
+          nextButton.onclick = () => {
+              if (current < total) {
+                  currentPage = current + 1;
+                  loadBestsellers();
+              }
+          };
+      }
+
+      async function loadBestsellers() {
+          if (isLoading) return;
+          isLoading = true;
+
+          try {
+              const searchTerm = document.getElementById('bookSearch').value;
+              const sortBy = document.getElementById('sortSelect').value;
+              const categoryFilter = document.getElementById('categoryFilter').value;
+
+              const params = new URLSearchParams({
+                  page: currentPage,
+                  limit: 12,
+                  period: currentPeriod,
+                  sort: sortBy
+              });
+
+              if (searchTerm) params.append('search', searchTerm);
+              if (categoryFilter) params.append('category', categoryFilter);
+
+              const response = await fetch(`/api/bestsellers/all?${params}`);
+              const data = await response.json();
+
+              if (data.success) {
+                  totalPages = data.total_pages;
+                  renderBestsellers(data.books, data.total_books, data.current_page, data.total_pages);
+              } else {
+                  throw new Error(data.message || 'Không thể tải bestsellers');
+              }
+          } catch (error) {
+              console.error('Error loading bestsellers:', error);
+              document.getElementById('bestsellersContainer').innerHTML = `
+                  <div class="empty-state">
+                      <div class="empty-icon">❌</div>
+                      <h3>Có lỗi xảy ra</h3>
+                      <p>Không thể tải danh sách bestsellers. Vui lòng thử lại sau.</p>
+                  </div>
+              `;
+          } finally {
+              isLoading = false;
+          }
+      }
+
+      function viewBookDetails(bookId) {
+          // Navigate to book details page (implement as needed)
+          console.log('View book details:', bookId);
+      }
+
+      function getRecommendations(bookId) {
+          // Navigate to recommendations page (implement as needed)
+          console.log('Get recommendations for:', bookId);
+      }
+
+      function toggleFavorite(bookId) {
+          // Toggle favorite status (implement as needed)
+          console.log('Toggle favorite:', bookId);
+      }
+
+      // Event listeners
+      document.querySelectorAll('.time-filter').forEach(button => {
+          button.addEventListener('click', () => {
+              document.querySelector('.time-filter.active').classList.remove('active');
+              button.classList.add('active');
+              currentPeriod = button.dataset.period;
+              currentPage = 1;
+              loadBestsellers();
+          });
+      });
+
+      document.getElementById('bookSearch').addEventListener('input', debounce(() => {
+          currentPage = 1;
+          loadBestsellers();
+      }, 500));
+
+      document.getElementById('sortSelect').addEventListener('change', () => {
+          currentPage = 1;
+          loadBestsellers();
+      });
+
+      document.getElementById('categoryFilter').addEventListener('change', () => {
+          currentPage = 1;
+          loadBestsellers();
+      });
+
+      function debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+              const later = () => {
+                  clearTimeout(timeout);
+                  func(...args);
+              };
+              clearTimeout(timeout);
+              timeout = setTimeout(later, wait);
+          };
+      }
+
+      // Initialize page
+      document.addEventListener('DOMContentLoaded', () => {
+          loadBestsellers();
+
+          // Check if user is logged in (you may need to implement this)
+          window.userLoggedIn = {{ 'true' if session.user_id else 'false' }};
+      });
+    </script>
+  </body>
+</html>

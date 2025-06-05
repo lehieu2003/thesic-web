@@ -625,8 +625,21 @@
               <button class="btn btn-primary" onclick="startChat()">
                 💬 Hỏi về cuốn sách này
               </button>
-              <button class="btn btn-outline" onclick="addToFavorites()">
-                ❤️ Yêu thích
+              <button
+                id="favoriteBtn"
+                class="btn btn-outline"
+                onclick="toggleFavorite()"
+              >
+                <span id="favoriteIcon">❤️</span>
+                <span id="favoriteText">Yêu thích</span>
+              </button>
+              <button
+                id="bookshelfBtn"
+                class="btn btn-outline"
+                onclick="toggleBookshelf()"
+              >
+                <span id="bookshelfIcon">📚</span>
+                <span id="bookshelfText">Thêm vào tủ sách</span>
               </button>
               <button class="btn btn-outline" onclick="shareBook()">
                 📤 Chia sẻ
@@ -910,9 +923,251 @@
         }
       }
 
-      function addToFavorites() {
-        // TODO: Implement favorites functionality
-        alert('Tính năng yêu thích sẽ được triển khai soonkkkk!');
+      // Variables to track current status
+      let isFavorite = false;
+      let isInBookshelf = false;
+
+      // Check user authentication
+      async function checkAuthentication() {
+        try {
+          const response = await fetch('/api/auth/profile');
+          return response.ok;
+        } catch (error) {
+          console.error('Error checking authentication:', error);
+          return false;
+        }
+      }
+
+      // Check if book is in favorites
+      async function checkFavoriteStatus() {
+        if (!bookData) return;
+
+        try {
+          const response = await fetch(
+            `/api/favorites/check/${bookData.isbn13}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            isFavorite = data.is_favorite;
+            updateFavoriteButton();
+          }
+        } catch (error) {
+          console.error('Error checking favorite status:', error);
+        }
+      }
+
+      // Check if book is in bookshelf
+      async function checkBookshelfStatus() {
+        if (!bookData) return;
+
+        try {
+          const response = await fetch(`/api/bookshelf/${bookData.isbn13}`);
+          if (response.ok) {
+            const data = await response.json();
+            isInBookshelf = data.book_id ? true : false;
+            updateBookshelfButton();
+          } else if (response.status === 404) {
+            isInBookshelf = false;
+            updateBookshelfButton();
+          }
+        } catch (error) {
+          console.error('Error checking bookshelf status:', error);
+        }
+      }
+
+      // Update favorite button appearance
+      function updateFavoriteButton() {
+        const btn = document.getElementById('favoriteBtn');
+        const icon = document.getElementById('favoriteIcon');
+        const text = document.getElementById('favoriteText');
+
+        if (isFavorite) {
+          btn.classList.remove('btn-outline');
+          btn.classList.add('btn-primary');
+          icon.textContent = '💖';
+          text.textContent = 'Đã yêu thích';
+        } else {
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline');
+          icon.textContent = '❤️';
+          text.textContent = 'Yêu thích';
+        }
+      }
+
+      // Update bookshelf button appearance
+      function updateBookshelfButton() {
+        const btn = document.getElementById('bookshelfBtn');
+        const icon = document.getElementById('bookshelfIcon');
+        const text = document.getElementById('bookshelfText');
+
+        if (isInBookshelf) {
+          btn.classList.remove('btn-outline');
+          btn.classList.add('btn-primary');
+          icon.textContent = '📖';
+          text.textContent = 'Trong tủ sách';
+        } else {
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline');
+          icon.textContent = '📚';
+          text.textContent = 'Thêm vào tủ sách';
+        }
+      }
+
+      // Toggle favorite status
+      async function toggleFavorite() {
+        if (!bookData) return;
+
+        const isAuthenticated = await checkAuthentication();
+        if (!isAuthenticated) {
+          alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+          return;
+        }
+
+        try {
+          if (isFavorite) {
+            // Remove from favorites
+            const response = await fetch(`/api/favorites/${bookData.isbn13}`, {
+              method: 'DELETE',
+            });
+
+            if (response.ok) {
+              isFavorite = false;
+              updateFavoriteButton();
+              showToast('Đã xóa khỏi danh sách yêu thích!', 'success');
+            } else {
+              showToast('Không thể xóa khỏi danh sách yêu thích!', 'error');
+            }
+          } else {
+            // Add to favorites
+            const favoriteData = {
+              isbn13: bookData.isbn13,
+              favorite_reason: 'Được thêm từ trang chi tiết sách',
+              notes: '',
+              tags: [],
+            };
+
+            const response = await fetch('/api/favorites', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(favoriteData),
+            });
+
+            if (response.ok) {
+              isFavorite = true;
+              updateFavoriteButton();
+              showToast('Đã thêm vào danh sách yêu thích!', 'success');
+            } else {
+              showToast('Không thể thêm vào danh sách yêu thích!', 'error');
+            }
+          }
+        } catch (error) {
+          console.error('Error toggling favorite:', error);
+          showToast('Có lỗi xảy ra!', 'error');
+        }
+      }
+
+      // Toggle bookshelf status
+      async function toggleBookshelf() {
+        if (!bookData) return;
+
+        const isAuthenticated = await checkAuthentication();
+        if (!isAuthenticated) {
+          alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+          return;
+        }
+
+        try {
+          if (isInBookshelf) {
+            // Remove from bookshelf
+            const response = await fetch(`/api/bookshelf/${bookData.isbn13}`, {
+              method: 'DELETE',
+            });
+
+            if (response.ok) {
+              isInBookshelf = false;
+              updateBookshelfButton();
+              showToast('Đã xóa khỏi tủ sách!', 'success');
+            } else {
+              showToast('Không thể xóa khỏi tủ sách!', 'error');
+            }
+          } else {
+            // Add to bookshelf
+            const bookshelfData = {
+              isbn13: bookData.isbn13,
+              status: 'want_to_read',
+              notes: '',
+              personal_rating: null,
+            };
+
+            const response = await fetch('/api/bookshelf', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(bookshelfData),
+            });
+
+            if (response.ok) {
+              isInBookshelf = true;
+              updateBookshelfButton();
+              showToast('Đã thêm vào tủ sách!', 'success');
+            } else {
+              showToast('Không thể thêm vào tủ sách!', 'error');
+            }
+          }
+        } catch (error) {
+          console.error('Error toggling bookshelf:', error);
+          showToast('Có lỗi xảy ra!', 'error');
+        }
+      }
+
+      // Show toast notification
+      function showToast(message, type = 'info') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: ${
+            type === 'success'
+              ? '#10b981'
+              : type === 'error'
+              ? '#ef4444'
+              : '#3b82f6'
+          };
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          z-index: 1000;
+          opacity: 0;
+          transform: translateX(100%);
+          transition: all 0.3s ease;
+        `;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
       }
 
       function shareBook() {

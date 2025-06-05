@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thể loại sách - Book Recommendations</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+
+      .navbar {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 0;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 2rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .nav-link {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .nav-link:hover,
+      .nav-link.active {
+        color: #ffd700;
+        transform: translateY(-2px);
+      }
+
+      .user-menu {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .user-name {
+        color: white;
+        font-weight: 500;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+      }
+
+      .page-subtitle {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.8);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .search-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .search-box {
+        position: relative;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        outline: none;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-input::placeholder {
+        color: #999;
+      }
+
+      .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .category-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .category-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+      }
+
+      .category-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .category-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .category-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      .category-count {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      .category-description {
+        font-size: 0.85rem;
+        color: #777;
+        line-height: 1.4;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 3rem;
+        color: white;
+        font-size: 1.1rem;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        .page-title {
+          font-size: 2rem;
+        }
+
+        .categories-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .category-card {
+          padding: 1.5rem;
+        }
+
+        .nav-menu {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-container">
+        <a href="/" class="logo">📚 BookRec</a>
+        <div class="nav-menu">
+          <a href="/explore" class="nav-link">Khám phá</a>
+          <a href="/categories" class="nav-link active">Thể loại</a>
+          <a href="/bestsellers" class="nav-link">Bestseller</a>
+        </div>
+        <div class="user-menu">
+          {% if session.user_id %}
+          <span class="user-name">{{ session.username }}</span>
+          <a href="/profile" class="nav-link">Profile</a>
+          <a href="/logout" class="nav-link">Đăng xuất</a>
+          {% else %}
+          <a href="/login" class="nav-link">Đăng nhập</a>
+          <a href="/register" class="nav-link">Đăng ký</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">Thể loại sách</h1>
+        <p class="page-subtitle">
+          Khám phá những thể loại sách đa dạng và tìm kiếm cuốn sách phù hợp với
+          sở thích của bạn
+        </p>
+      </div>
+
+      <div class="search-section">
+        <div class="search-box">
+          <input
+            type="text"
+            id="categorySearch"
+            class="search-input"
+            placeholder="Tìm kiếm thể loại sách..."
+          />
+        </div>
+      </div>
+
+      <div id="categoriesContainer">
+        <div class="loading">
+          <div>🔄 Đang tải danh sách thể loại...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let allCategories = [];
+
+      // Category icons mapping
+      const categoryIcons = {
+        'khoa-hoc-vien-tuong': '🔬',
+        'van-hoc': '📖',
+        'lich-su': '📜',
+        'kinh-te': '💰',
+        'tam-ly': '🧠',
+        'trinh-tham': '🔍',
+        'the-thao': '⚽',
+        'du-lich': '✈️',
+        'nau-an': '🍳',
+        'giao-duc': '🎓',
+        'kinh-doanh': '💼',
+        'cong-nghe': '💻',
+        'suc-khoe': '❤️',
+        'gia-dinh': '👨‍👩‍👧‍👦',
+        'thieu-nhi': '🧸',
+        default: '📚',
+      };
+
+      const categoryDescriptions = {
+        'khoa-hoc-vien-tuong':
+          'Khám phá thế giới khoa học và viễn tưởng đầy màu sắc',
+        'van-hoc': 'Những tác phẩm văn học kinh điển và hiện đại',
+        'lich-su': 'Tìm hiểu về quá khứ để hiểu rõ hiện tại',
+        'kinh-te': 'Kiến thức về kinh tế và tài chính',
+        'tam-ly': 'Hiểu biết về tâm lý con người',
+        'trinh-tham': 'Những câu chuyện ly kỳ và bí ẩn',
+        'the-thao': 'Thế giới thể thao đầy sôi động',
+        'du-lich': 'Khám phá thế giới qua những cuốn sách',
+        'nau-an': 'Nghệ thuật ẩm thực và công thức nấu ăn',
+        'giao-duc': 'Kiến thức giáo dục và học tập',
+        'kinh-doanh': 'Chiến lược kinh doanh và quản lý',
+        'cong-nghe': 'Công nghệ và đổi mới sáng tạo',
+        'suc-khoe': 'Chăm sóc sức khỏe và lối sống',
+        'gia-dinh': 'Hạnh phúc gia đình và nuôi dạy con',
+        'thieu-nhi': 'Sách dành cho trẻ em và thiếu niên',
+      };
+
+      function formatCategoryName(slug) {
+        return slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      }
+
+      function getCategoryIcon(slug) {
+        return categoryIcons[slug] || categoryIcons['default'];
+      }
+
+      function getCategoryDescription(slug) {
+        return (
+          categoryDescriptions[slug] ||
+          'Khám phá những cuốn sách thú vị trong thể loại này'
+        );
+      }
+
+      function renderCategories(categories) {
+        const container = document.getElementById('categoriesContainer');
+
+        if (categories.length === 0) {
+          container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📚</div>
+                        <h3>Không tìm thấy thể loại nào</h3>
+                        <p>Thử tìm kiếm với từ khóa khác</p>
+                    </div>
+                `;
+          return;
+        }
+
+        const categoriesHTML = categories
+          .map(
+            (category) => `
+                <a href="/category/${category.slug}" class="category-card">
+                    <div class="category-icon">${getCategoryIcon(
+                      category.slug
+                    )}</div>
+                    <div class="category-name">${formatCategoryName(
+                      category.name
+                    )}</div>
+                    <div class="category-count">${
+                      category.count
+                    } cuốn sách</div>
+                    <div class="category-description">${getCategoryDescription(
+                      category.slug
+                    )}</div>
+                </a>
+            `
+          )
+          .join('');
+
+        container.innerHTML = `<div class="categories-grid">${categoriesHTML}</div>`;
+      }
+
+      function filterCategories(searchTerm) {
+        const filtered = allCategories.filter(
+          (category) =>
+            formatCategoryName(category.name)
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            getCategoryDescription(category.slug)
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        );
+        renderCategories(filtered);
+      }
+
+      async function loadCategories() {
+        try {
+          const response = await fetch('/api/categories');
+          const data = await response.json();
+
+          if (data.success) {
+            allCategories = data.categories;
+            renderCategories(allCategories);
+          } else {
+            throw new Error(data.message || 'Không thể tải danh sách thể loại');
+          }
+        } catch (error) {
+          console.error('Error loading categories:', error);
+          document.getElementById('categoriesContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <h3>Có lỗi xảy ra</h3>
+                        <p>Không thể tải danh sách thể loại. Vui lòng thử lại sau.</p>
+                    </div>
+                `;
+        }
+      }
+
+      // Search functionality
+      document
+        .getElementById('categorySearch')
+        .addEventListener('input', (e) => {
+          filterCategories(e.target.value);
+        });
+
+      // Load categories on page load
+      document.addEventListener('DOMContentLoaded', loadCategories);
+    </script>
+  </body>
+</html>
